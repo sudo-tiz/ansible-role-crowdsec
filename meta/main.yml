@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: crowdsec
+  author: sudo-Tiz
+  description: Install CrowdSec in Docker and collect host and service logs.
+  platforms:
+    - name: Debian
+      versions: [all]
+    - name: Ubuntu
+      versions: [all]
+  license: AGPL-3.0-or-later
+  min_ansible_version: "2.18"

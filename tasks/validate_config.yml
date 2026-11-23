@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 sudo-Tiz
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Fail if CrowdSec collections or acquisitions are not configured
+  ansible.builtin.fail:
+    msg: Define at least one CrowdSec collection and log acquisition.
+  when: crowdsec_collections | length == 0 or crowdsec_acquisitions | length == 0
+
+- name: Fail if the Traefik bouncer has no API key
+  ansible.builtin.fail:
+    msg: Define crowdsec_bouncer_key when crowdsec_traefik_bouncer_enabled is true.
+  when: crowdsec_traefik_bouncer_enabled | bool and crowdsec_bouncer_key | length == 0
+
+- name: Fail if journal acquisitions use a non-Debian image
+  ansible.builtin.fail:
+    msg: The journalctl acquisition source requires the CrowdSec Debian image variant.
+  when:
+    - crowdsec_acquisitions | selectattr('source', 'equalto', 'journalctl') | list | length > 0
+    - not crowdsec_container_image_tag.endswith('-debian')

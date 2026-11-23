@@ -1,0 +1,133 @@
+# SPDX-FileCopyrightText: 2026 sudo-Tiz
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Ensure CrowdSec paths exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+  loop:
+    - "{{ crowdsec_base_path }}"
+    - "{{ crowdsec_config_path }}"
+    - "{{ crowdsec_config_path }}/acquis.d"
+    - "{{ crowdsec_data_path }}"
+
+- name: Inspect host journal directories
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ crowdsec_journal_host_paths }}"
+  register: crowdsec_journal_paths_stat
+  when: crowdsec_acquisitions | selectattr('source', 'equalto', 'journalctl') | list | length > 0
+
+- name: Select a host journal directory
+  ansible.builtin.set_fact:
+    crowdsec_journal_host_path: "{{ crowdsec_journal_paths_stat.results | selectattr('stat.exists') | map(attribute='item') | first | default('') }}"
+  when: crowdsec_acquisitions | selectattr('source', 'equalto', 'journalctl') | list | length > 0
+
+- name: Fail if journald acquisition has no host journal directory
+  ansible.builtin.fail:
+    msg: No host journal directory found; set crowdsec_journal_host_paths to the systemd journal path.
+  when:
+    - crowdsec_acquisitions | selectattr('source', 'equalto', 'journalctl') | list | length > 0
+    - crowdsec_journal_host_path | default('') | length == 0
+
+- name: Ensure CrowdSec environment file is installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/env.j2"
+    dest: "{{ crowdsec_base_path }}/env"
+    mode: "0600"
+    owner: root
+    group: root
+  register: crowdsec_environment_file_result
+  no_log: true
+
+- name: Ensure Traefik bouncer key file is installed
+  when: crowdsec_traefik_bouncer_enabled | bool
+  ansible.builtin.copy:
+    content: "{{ crowdsec_bouncer_key }}\n"
+    dest: "{{ crowdsec_traefik_bouncer_key_file_path }}"
+    mode: "0640"
+    owner: root
+    group: "{{ crowdsec_traefik_bouncer_key_file_group }}"
+  register: crowdsec_bouncer_key_file_result
+  no_log: true
+
+- name: Remove Traefik bouncer key file when the bouncer is disabled
+  when: not crowdsec_traefik_bouncer_enabled | bool
+  ansible.builtin.file:
+    path: "{{ crowdsec_traefik_bouncer_key_file_path }}"
+    state: absent
+  register: crowdsec_bouncer_key_file_result
+
+- name: Ensure CrowdSec acquisitions are installed
+  ansible.builtin.copy:
+    content: "{{ crowdsec_acquisitions_configuration }}"
+    dest: "{{ crowdsec_config_path }}/acquis.d/mash.yaml"
+    mode: "0640"
+    owner: root
+    group: root
+  register: crowdsec_acquisitions_file_result
+
+- name: Ensure CrowdSec container image is pulled via community.docker.docker_image_pull
+  when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
+  community.docker.docker_image_pull:
+    name: "{{ crowdsec_container_image }}"
+    pull: always
+  register: crowdsec_container_image_pull_result_ansible_module
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: crowdsec_container_image_pull_result_ansible_module is not failed
+
+- name: Ensure CrowdSec container image is pulled via command
+  when: devture_systemd_docker_base_container_image_pull_method == 'command'
+  ansible.builtin.command:
+    cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ crowdsec_container_image }}"
+  register: crowdsec_container_image_pull_result_command
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: crowdsec_container_image_pull_result_command is not failed
+  changed_when: "'Downloaded newer image' in crowdsec_container_image_pull_result_command.stdout"
+
+- name: Ensure CrowdSec container network exists via community.docker.docker_network
+  when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
+  community.docker.docker_network:
+    enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
+    name: "{{ crowdsec_container_network }}"
+    driver: bridge
+    driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
+  register: crowdsec_network_creation_result
+
+- name: Ensure CrowdSec container network exists via command
+  when: devture_systemd_docker_base_container_network_creation_method == 'command'
+  ansible.builtin.command:
+    cmd: >-
+      {{ devture_systemd_docker_base_host_command_docker }} network create
+      {% if devture_systemd_docker_base_ipv6_enabled %}--ipv6{% endif %}
+      {{ devture_systemd_docker_base_container_networks_driver_options_string }}
+      {{ crowdsec_container_network }}
+  register: crowdsec_network_creation_result
+  changed_when: crowdsec_network_creation_result.rc == 0
+  failed_when: crowdsec_network_creation_result.rc != 0 and 'already exists' not in crowdsec_network_creation_result.stderr
+
+- name: Ensure CrowdSec systemd service is present
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/systemd/crowdsec.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ crowdsec_identifier }}.service"
+    mode: "0644"
+  register: crowdsec_systemd_service_result
+
+- name: Determine whether CrowdSec needs a restart
+  ansible.builtin.set_fact:
+    crowdsec_restart_necessary: >-
+      {{
+        crowdsec_environment_file_result.changed | default(false)
+        or crowdsec_bouncer_key_file_result.changed | default(false)
+        or crowdsec_acquisitions_file_result.changed | default(false)
+        or crowdsec_systemd_service_result.changed | default(false)
+        or crowdsec_container_image_pull_result_ansible_module.changed | default(false)
+        or crowdsec_container_image_pull_result_command.changed | default(false)
+      }}

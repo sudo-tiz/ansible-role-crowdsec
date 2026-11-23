@@ -1,0 +1,47 @@
+{#
+SPDX-FileCopyrightText: 2026 sudo-Tiz
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+#}
+
+[Unit]
+Description=CrowdSec security engine ({{ crowdsec_identifier }})
+{% for service in crowdsec_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+{% for service in crowdsec_systemd_wanted_services_list %}
+Wants={{ service }}
+{% endfor %}
+
+[Service]
+Type=simple
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ crowdsec_container_stop_grace_time_seconds }} {{ crowdsec_identifier }}
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_docker }} rm -f {{ crowdsec_identifier }}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
+      --rm \
+      --name={{ crowdsec_identifier }} \
+      --log-driver=none \
+      --cap-drop=ALL \
+      --cap-add=DAC_READ_SEARCH \
+      --network={{ crowdsec_container_network }} \
+      --env-file={{ crowdsec_base_path }}/env \
+      --mount type=bind,src={{ crowdsec_config_path }},dst=/etc/crowdsec \
+      --mount type=bind,src={{ crowdsec_data_path }},dst=/var/lib/crowdsec/data \
+      {% if crowdsec_journal_host_path | default('') %}
+      --mount type=bind,src={{ crowdsec_journal_host_path }},dst=/run/log/journal,ro \
+      --mount type=bind,src=/etc/machine-id,dst=/etc/machine-id,ro \
+      {% endif %}
+      {{ crowdsec_container_image }}
+{% for network in crowdsec_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ crowdsec_identifier }}
+{% endfor %}
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ crowdsec_identifier }}
+ExecStop=-{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ crowdsec_container_stop_grace_time_seconds }} {{ crowdsec_identifier }}
+ExecStop=-{{ devture_systemd_docker_base_host_command_docker }} rm {{ crowdsec_identifier }}
+Restart=always
+RestartSec=30
+SyslogIdentifier={{ crowdsec_identifier }}
+
+[Install]
+WantedBy=multi-user.target

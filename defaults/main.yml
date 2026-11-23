@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 sudo-Tiz
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+# Project source code URL: https://github.com/crowdsecurity/crowdsec
+
+crowdsec_enabled: true
+
+crowdsec_identifier: crowdsec
+crowdsec_base_path: "/{{ crowdsec_identifier }}"
+crowdsec_config_path: "{{ crowdsec_base_path }}/config"
+crowdsec_data_path: "{{ crowdsec_base_path }}/data"
+
+# renovate: datasource=docker depName=crowdsecurity/crowdsec versioning=semver
+crowdsec_version: v1.8.2
+crowdsec_container_image: "{{ crowdsec_container_image_registry_prefix }}crowdsecurity/crowdsec:{{ crowdsec_container_image_tag }}"
+crowdsec_container_image_tag: "{{ crowdsec_version }}-debian"
+crowdsec_container_image_registry_prefix: docker.io/
+
+crowdsec_container_network: "{{ crowdsec_identifier }}"
+crowdsec_container_network_deletion_enabled: true
+crowdsec_container_additional_networks: "{{ (crowdsec_container_additional_networks_auto + crowdsec_container_additional_networks_custom) | unique }}"
+crowdsec_container_additional_networks_auto: []
+crowdsec_container_additional_networks_custom: []
+
+crowdsec_collections: "{{ (crowdsec_collections_auto + crowdsec_collections_custom) | unique }}"
+crowdsec_collections_auto: []
+crowdsec_collections_custom: []
+
+crowdsec_acquisitions: "{{ crowdsec_acquisitions_auto + crowdsec_acquisitions_custom }}"
+crowdsec_acquisitions_auto: []
+crowdsec_acquisitions_custom: []
+crowdsec_acquisitions_configuration: "{{ lookup('template', 'templates/acquis.yaml.j2') }}"
+crowdsec_journal_host_paths: [/var/log/journal, /run/log/journal]
+
+crowdsec_bouncer_key: ""
+crowdsec_traefik_bouncer_enabled: false
+crowdsec_traefik_bouncer_key_file_path: "{{ crowdsec_base_path }}/traefik-bouncer-key"
+crowdsec_traefik_bouncer_key_file_group: root
+crowdsec_traefik_bouncer_plugin_version: v1.8.2
+crowdsec_traefik_bouncer_stream_startup_block_enabled: false
+crowdsec_traefik_client_trusted_ips: []
+
+crowdsec_enroll_key: ""
+crowdsec_enroll_instance_name: ""
+crowdsec_enroll_tags: []
+crowdsec_environment_variables_tz: UTC
+crowdsec_environment_variables_additional_variables: ""
+
+crowdsec_systemd_required_services_list: "{{ crowdsec_systemd_required_services_list_default + crowdsec_systemd_required_services_list_auto + crowdsec_systemd_required_services_list_custom }}"
+crowdsec_systemd_required_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
+crowdsec_systemd_required_services_list_auto: []
+crowdsec_systemd_required_services_list_custom: []
+crowdsec_systemd_wanted_services_list: "{{ crowdsec_systemd_wanted_services_list_default + crowdsec_systemd_wanted_services_list_auto + crowdsec_systemd_wanted_services_list_custom }}"
+crowdsec_systemd_wanted_services_list_default: []
+crowdsec_systemd_wanted_services_list_auto: []
+crowdsec_systemd_wanted_services_list_custom: []
+
+crowdsec_container_stop_grace_time_seconds: "{{ devture_systemd_docker_base_container_stop_grace_time_seconds }}"
+crowdsec_data_deletion_enabled: false
+crowdsec_restart_necessary: false

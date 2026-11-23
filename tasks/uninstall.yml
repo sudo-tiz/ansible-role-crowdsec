@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2026 sudo-Tiz
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Check whether CrowdSec systemd service exists
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ crowdsec_identifier }}.service"
+  register: crowdsec_service_stat
+
+- name: Remove CrowdSec systemd service
+  when: crowdsec_service_stat.stat.exists | bool
+  block:
+    - name: Stop CrowdSec systemd service
+      ansible.builtin.service:
+        name: "{{ crowdsec_identifier }}"
+        state: stopped
+        enabled: false
+
+    - name: Remove CrowdSec systemd service file
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ crowdsec_identifier }}.service"
+        state: absent
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+- name: Remove CrowdSec container network
+  when: crowdsec_container_network_deletion_enabled | bool
+  block:
+    - name: Remove CrowdSec network via community.docker.docker_network
+      when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
+      community.docker.docker_network:
+        name: "{{ crowdsec_container_network }}"
+        state: absent
+
+    - name: Remove CrowdSec network via command
+      when: devture_systemd_docker_base_container_network_creation_method == 'command'
+      ansible.builtin.command:
+        cmd: "{{ devture_systemd_docker_base_host_command_docker }} network rm {{ crowdsec_container_network }}"
+      register: crowdsec_network_deletion_result
+      changed_when: crowdsec_container_network in crowdsec_network_deletion_result.stdout
+      failed_when: crowdsec_network_deletion_result.rc != 0 and 'not found' not in crowdsec_network_deletion_result.stderr
+
+- name: Remove CrowdSec data
+  when: crowdsec_data_deletion_enabled | bool
+  ansible.builtin.file:
+    path: "{{ crowdsec_base_path }}"
+    state: absent
+
+- name: Remove CrowdSec environment and bouncer key files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ crowdsec_base_path }}/env"
+    - "{{ crowdsec_traefik_bouncer_key_file_path }}"
