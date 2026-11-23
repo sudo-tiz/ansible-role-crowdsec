@@ -5,6 +5,14 @@
 version = 1
 
 [[annotations]]
-path = ["meta/main.yml"]
+path = [
+    ".ansible-lint",
+    ".github/renovate.json",
+    ".gitignore",
+    ".pre-commit-config.yaml",
+    ".woodpecker.yml",
+    ".yamllint.yml",
+    "meta/main.yml"
+]
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"

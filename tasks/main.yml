@@ -7,8 +7,10 @@
   when: crowdsec_enabled | bool
   tags: [setup-all, setup-crowdsec, install-all, install-crowdsec]
   block:
-    - ansible.builtin.import_tasks: validate_config.yml
-    - ansible.builtin.import_tasks: install.yml
+    - name: Validate CrowdSec configuration
+      ansible.builtin.import_tasks: validate_config.yml
+    - name: Install CrowdSec
+      ansible.builtin.import_tasks: install.yml
 
 - name: Uninstall CrowdSec
   when: not crowdsec_enabled | bool

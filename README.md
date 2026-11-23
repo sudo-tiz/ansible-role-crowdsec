@@ -11,3 +11,7 @@ Install [CrowdSec](https://www.crowdsec.net/) as a Docker container managed by s
 The role does not install a firewall bouncer. It can seed a Traefik bouncer key for the MASH integration; keep that key private.
 
 See [`docs/configuring-crowdsec.md`](docs/configuring-crowdsec.md) for role variables and log acquisition examples. The full list of defaults is in [`defaults/main.yml`](defaults/main.yml).
+
+## Development
+
+Install the pinned tools with `just mise install`, then run the checks with `just prek-run-on-all`.

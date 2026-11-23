@@ -31,6 +31,8 @@ When `crowdsec_traefik_bouncer_enabled` is true, the role seeds the `traefik` bo
 
 `crowdsec_traefik_bouncer_stream_startup_block_enabled` defaults to `false` so an unavailable Local API does not block all traffic during Traefik startup. Set it to `true` for fail-closed startup behavior.
 
+The Docker image uses `BOUNCER_KEY_traefik` to register a bouncer only when that name is absent; it does not update an existing key. To rotate only this key, override `crowdsec_bouncer_key` in private inventory, remove the existing `traefik` bouncer registration (`docker exec <crowdsec-container> cscli bouncers delete traefik`), then rerun the playbook. Avoid changing `mash_playbook_generic_secret_key` solely for this rotation because it changes all secrets derived from it.
+
 ## Persistence and secrets
 
 Do not delete `crowdsec_base_path` unless you intend to erase CrowdSec's local database, credentials, and hub data. `crowdsec_data_deletion_enabled` defaults to false. Do not expose port 8080 or commit bouncer/enrollment keys.
