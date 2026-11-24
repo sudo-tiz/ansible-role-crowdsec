@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2026 sudo-Tiz
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Prepare CrowdSec Molecule test
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Install Docker Python dependencies
+      ansible.builtin.package:
+        name:
+          - python3-docker
+          - python3-requests
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.include_role:
+        name: ansible-role-docker
+
+    - name: Create the acquisition directory
+      ansible.builtin.file:
+        path: /crowdsec/config/acquis.d
+        state: directory
+        mode: "0755"
+
+    - name: Seed the acquisition log
+      ansible.builtin.copy:
+        dest: "{{ crowdsec_molecule_log_host_path }}"
+        content: "CrowdSec Molecule acquisition smoke line\n"
+        mode: "0644"

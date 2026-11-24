@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 sudo-Tiz
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Install CrowdSec for Molecule tests
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Include dependency and CrowdSec roles
+      ansible.builtin.include_role:
+        name: "{{ role_name }}"
+        public: true
+      loop:
+        - com.devture.ansible.role.playbook_help
+        - com.devture.ansible.role.systemd_docker_base
+        - "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
+      loop_control:
+        loop_var: role_name
+
+- name: Start CrowdSec
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Reload systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    - name: Start CrowdSec service
+      ansible.builtin.systemd_service:
+        name: crowdsec.service
+        state: started

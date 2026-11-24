@@ -10,7 +10,9 @@ path = [
     ".github/renovate.json",
     ".gitignore",
     ".pre-commit-config.yaml",
-    ".woodpecker.yml",
+    ".python-version",
+    "molecule/default/requirements.yml",
+    "molecule/requirements.txt",
     ".yamllint.yml",
     "meta/main.yml"
 ]

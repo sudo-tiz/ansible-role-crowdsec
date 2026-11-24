@@ -14,4 +14,4 @@ See [`docs/configuring-crowdsec.md`](docs/configuring-crowdsec.md) for role vari
 
 ## Development
 
-Install the pinned tools with `just mise install`, then run the checks with `just prek-run-on-all`.
+Install the pinned tools with `just mise install`, then run the checks with `just prek-run-on-all`. See [`molecule/README.md`](molecule/README.md) for the service smoke test.
