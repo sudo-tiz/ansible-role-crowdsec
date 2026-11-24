@@ -11,10 +11,10 @@ path = [
     ".gitignore",
     ".pre-commit-config.yaml",
     ".python-version",
-    "molecule/default/requirements.yml",
-    "molecule/requirements.txt",
     ".yamllint.yml",
-    "meta/main.yml"
+    "meta/main.yml",
+    "molecule/**/requirements.yml",
+    "molecule/requirements.txt"
 ]
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"

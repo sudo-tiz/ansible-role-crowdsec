@@ -4,13 +4,28 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Verify CrowdSec and its seeded Traefik bouncer
+- name: Verify CrowdSec acquisition and Traefik bouncer
   hosts: all
   become: true
   gather_facts: false
   tasks:
-    - name: Verify CrowdSec registered the bouncer and installed its key
+    - name: Verify CrowdSec read the acquisition, registered the bouncer, and installed its key
       block:
+        - name: Wait for CrowdSec to read the seeded acquisition log
+          ansible.builtin.command:
+            cmd: docker exec crowdsec cscli metrics show acquisition
+          register: crowdsec_molecule_acquisition_metrics
+          until: "'molecule.log' in crowdsec_molecule_acquisition_metrics.stdout"
+          retries: 60
+          delay: 5
+          changed_when: false
+
+        - name: Assert CrowdSec read the seeded acquisition log
+          ansible.builtin.assert:
+            that: "'molecule.log' in crowdsec_molecule_acquisition_metrics.stdout"
+            success_msg: "CrowdSec read the seeded acquisition log"
+            fail_msg: "CrowdSec did not read the seeded acquisition log"
+
         - name: Wait for the Traefik bouncer to register
           ansible.builtin.command:
             cmd: docker exec crowdsec cscli bouncers list
@@ -30,8 +45,8 @@
             that:
               - "'traefik' in crowdsec_molecule_bouncers.stdout"
               - (crowdsec_molecule_key_file.content | b64decode | trim) == crowdsec_bouncer_key
-            success_msg: "CrowdSec started, registered the Traefik bouncer, and installed its key"
-            fail_msg: "CrowdSec did not register the Traefik bouncer correctly"
+            success_msg: "CrowdSec read the seeded log, registered the Traefik bouncer, and installed its key"
+            fail_msg: "CrowdSec did not read the seeded log or register the Traefik bouncer correctly"
 
       rescue:
         - name: Retrieve CrowdSec service log
@@ -46,4 +61,4 @@
 
         - name: Fail verification
           ansible.builtin.fail:
-            msg: "CrowdSec failed to register the Traefik bouncer."
+            msg: "CrowdSec failed to read its seeded log or register the Traefik bouncer."

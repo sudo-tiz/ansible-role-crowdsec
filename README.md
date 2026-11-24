@@ -15,3 +15,7 @@ See [`docs/configuring-crowdsec.md`](docs/configuring-crowdsec.md) for role vari
 ## Development
 
 Install the pinned tools with `just mise install`, then run the checks with `just prek-run-on-all`. See [`molecule/README.md`](molecule/README.md) for the service smoke test.
+
+## Releases
+
+The autotag workflow uses `bin/compute-next-tag.sh` and `crowdsec_version` to create the next `v<version>-N` tag. `bin/test-compute-next-tag.sh` tests the release calculation.

@@ -11,8 +11,8 @@
 # Tags look like `v<CrowdSec version>-<release>`:
 #
 # - if defaults/main.yml points at a CrowdSec version that has never been
-#   released, the release counter restarts at 0 (`v13.0.2-0`)
-# - otherwise the counter is incremented (`v13.0.2-1`), but only if something
+#   released, the release counter restarts at 0 (`v1.8.2-0`)
+# - otherwise the counter is incremented (`v1.8.2-1`), but only if something
 #   that actually affects the role has changed since the last release
 #
 # Determining the version from defaults/main.yml, rather than from the commit
@@ -47,9 +47,9 @@ if [ -z "$version" ]; then
 	exit 1
 fi
 
-# The version values do not carry a leading `v` (e.g. `13.0.2`), but the tags
-# do (`v13.0.2-0`). Stripping any `v` before prepending one keeps this correct
-# even if the version values ever start carrying one.
+# The version value carries the leading `v` of the CrowdSec image tag (e.g.
+# `v1.8.2`), and so does the release tag (`v1.8.2-0`). Stripping any `v` before
+# prepending one keeps it from being doubled and also handles an unprefixed value.
 tag_prefix="v${version#v}-"
 
 # Of all releases of this version, the highest release number. Sorted

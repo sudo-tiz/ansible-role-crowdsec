@@ -1,9 +1,10 @@
 ---
 galaxy_info:
-  namespace: mash
-  role_name: crowdsec
   author: sudo-Tiz
-  description: Install CrowdSec in Docker and collect host and service logs.
+  company: mash
+  role_name: crowdsec
+  namespace: mash
+  description: CrowdSec
   platforms:
     - name: Debian
       versions: [all]
