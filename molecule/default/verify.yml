@@ -11,10 +11,15 @@
   tasks:
     - name: Verify CrowdSec read the acquisition, registered the bouncer, and installed its key
       block:
-        - name: Write a fresh log line after CrowdSec has started
-          ansible.builtin.lineinfile:
-            path: "{{ crowdsec_molecule_log_host_path }}"
-            line: CrowdSec Molecule post-start acquisition verification line
+        - name: Append a fresh log line after CrowdSec has started
+          ansible.builtin.command:
+            argv:
+              - tee
+              - -a
+              - "{{ crowdsec_molecule_log_host_path }}"
+            stdin: CrowdSec Molecule post-start acquisition verification line
+            stdin_add_newline: true
+          changed_when: true
 
         - name: Wait for CrowdSec to read the post-start acquisition line
           ansible.builtin.command:
