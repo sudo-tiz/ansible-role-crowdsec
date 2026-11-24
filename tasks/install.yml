@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Ensure CrowdSec paths exist
+- name: Ensure CrowdSec private paths exist
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -12,9 +12,20 @@
     group: root
   loop:
     - "{{ crowdsec_base_path }}"
+    - "{{ crowdsec_data_path }}"
+
+# CrowdSec's startup script uses rsync -a to populate /etc/crowdsec, restoring
+# the image's 0755 directory modes. The 0700 base path still protects these on the host.
+- name: Ensure CrowdSec configuration paths exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+  loop:
     - "{{ crowdsec_config_path }}"
     - "{{ crowdsec_config_path }}/acquis.d"
-    - "{{ crowdsec_data_path }}"
 
 - name: Inspect host journal directories
   ansible.builtin.stat:
