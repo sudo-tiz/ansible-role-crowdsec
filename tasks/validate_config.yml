@@ -13,6 +13,13 @@
     msg: Define crowdsec_bouncer_key when crowdsec_traefik_bouncer_enabled is true.
   when: crowdsec_traefik_bouncer_enabled | bool and crowdsec_bouncer_key | length == 0
 
+- name: Fail if the Traefik bouncer is enabled while access logs are disabled
+  ansible.builtin.fail:
+    msg: Set traefik_config_accessLog_enabled to true while the CrowdSec Traefik bouncer is enabled.
+  when:
+    - crowdsec_traefik_bouncer_enabled | bool
+    - not (traefik_config_accessLog_enabled | default(true) | bool)
+
 - name: Fail if journal acquisitions use a non-Debian image
   ansible.builtin.fail:
     msg: The journalctl acquisition source requires the CrowdSec Debian image variant.

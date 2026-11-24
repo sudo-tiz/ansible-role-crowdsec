@@ -1,5 +1,6 @@
 ---
 galaxy_info:
+  namespace: mash
   role_name: crowdsec
   author: sudo-Tiz
   description: Install CrowdSec in Docker and collect host and service logs.
