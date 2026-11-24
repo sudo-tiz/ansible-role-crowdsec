@@ -37,6 +37,7 @@ provisioner:
             labels: {type: syslog}
         crowdsec_traefik_bouncer_enabled: true
         crowdsec_bouncer_key: molecule-test-bouncer-key
+        crowdsec_traefik_bouncer_key_file_path: /crowdsec/traefik-bouncer-key
         crowdsec_molecule_log_host_path: /crowdsec/config/acquis.d/molecule.log
   env:
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles
